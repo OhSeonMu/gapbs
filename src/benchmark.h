@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <cstdio> 
+#include <cstring>
 
 #include "builder.h"
 #include "graph.h"
@@ -118,7 +119,7 @@ int CreateSocket(int &socket_fd, int &opt,
 	return -1;
   }
 
-  if (listen(socket_fd, 3) < 0) {
+  if (listen(socket_fd, 1) < 0) {
     std::cerr << "Listen error" << std::endl;
 	return -1;
   }
@@ -141,12 +142,19 @@ int GetNumTrials(const int &socket_fd, const struct sockaddr_in &address, int* n
 	return -1;
   }
 
+  return new_socket;
+}
+
+int SendEnd(int new_socket) {
+  const char* buffer = "RUN END";
+
+  send(new_socket, buffer, strlen(buffer), 0);
   return 1;
 }
 
 // Calls (and times) kernel according to command line arguments
 template<typename GraphT_, typename GraphFunc, typename AnalysisFunc,
-         typename VerifierFunc>
+ typename VerifierFunc>
 void BenchmarkKernel(const CLApp &cli, const GraphT_ &g,
                      GraphFunc kernel, AnalysisFunc stats,
                      VerifierFunc verify) {
@@ -156,16 +164,22 @@ void BenchmarkKernel(const CLApp &cli, const GraphT_ &g,
 	struct sockaddr_in address;
 	int opt = 1;
 	int num_trials[2];
+	int new_socket;
+	std::cout << "BUILD END" << std::endl;
 	if (CreateSocket(socket_fd, opt, address, cli.port()) < 0) {
       return; 
 	}
 	while (1) {
     // TODO:  네트워크를 통해 num_trials 횟수를 받아오기
-	  if ((GetNumTrials(socket_fd, address, num_trials)) < 1)
+	  if ((new_socket = GetNumTrials(socket_fd, address, num_trials)) < 1)
 		return;
 	  DoKernelTrials(num_trials[1], cli, g, kernel, stats, verify);
+	  std::cout << "end num trail" << std::endl;
+	  if ((SendEnd(new_socket)) < 1)
+		return;
 	  if (num_trials[0] == 1 )
 		  break;
+	  std::cout << "get" << std::endl;
     }
   } else {
     DoKernelTrials(cli.num_trials(), cli, g, kernel, stats, verify);

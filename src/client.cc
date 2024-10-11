@@ -8,18 +8,20 @@ int main(int argc, char const *argv[]) {
     int sock = 0, port = 9709;
     struct sockaddr_in serv_addr;
     char* buffer = (char*)std::malloc(1024);
+    char* buffer_read = (char*)std::malloc(1024);
     const char* tmp = " ";
 
-	if (argc < 3) {
-		std::cerr << "usage: ./client <num_trials> <ip> [port]" << std::endl;
-		return -1;
-	}
+    if (argc < 3) {
+	std::cerr << "usage: ./client <num_trials> <ip> [port]" << std::endl;
+	return -1;
+    }
+
     const char* stop = argv[1];
     const char* num_trials = argv[2];
     const char* ip = argv[3];
 
-	if (argc == 5)
-		port = atoi(argv[4]);
+    if (argc == 5)
+	    port = atoi(argv[4]);
 
     // Create socket file descriptor
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -48,10 +50,12 @@ int main(int argc, char const *argv[]) {
     strcat(buffer, num_trials); 
     
     send(sock, buffer, strlen(buffer), 0);
-    
+    read(sock, buffer_read, 1024);
     printf("SUCCESS\n");
     printf("%s\n", buffer);
+    printf("%s\n", buffer_read);
     free(buffer);
+    free(buffer_read);
 
     return 0;
 }
